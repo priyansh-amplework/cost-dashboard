@@ -489,12 +489,13 @@ with tab3:
         """)
 
 # --- CLICK ANALYTICS TAB ---
+# --- CLICK ANALYTICS TAB ---
 with tab4:
     st.markdown("### 📊 Real-Time Click Analytics")
     
     # Server status check
     if not server_running:
-        st.error("❌ Tracking server is not running!")
+        st.warning("⚠️ Tracking server is offline - Showing sample data")
         st.markdown("""
         <div class="error-box">
         <strong>To start the tracking server:</strong>
@@ -505,28 +506,99 @@ with tab4:
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔄 Check Server Status"):
-                st.cache_data.clear()
-                st.rerun()
-        with col2:
-            if st.button("📝 View Sample Analytics"):
-                # Show sample data when server is down
-                st.info("📊 Sample Analytics (Server Offline)")
-                sample_df = pd.DataFrame({
-                    "Post URL": ["https://facebook.com/posts/123", "https://linkedin.com/feed/456"],
-                    "Platform": ["Facebook", "LinkedIn"],
-                    "Badge": ["Gold", "Silver"],
-                    "Clicks": [0, 0],
-                    "First Click": ["--", "--"],
-                    "Last Click": ["--", "--"]
-                })
-                st.dataframe(sample_df, use_container_width=True)
+        if st.button("🔄 Check Server Status"):
+            st.cache_data.clear()
+            st.rerun()
         
-       
-    
-    analytics = fetch_analytics()
+        st.markdown("---")
+        
+        # Create sample analytics data
+        analytics = {
+            'total_clicks': 147,
+            'unique_users': 32,
+            'total_posts': 25,
+            'avg_clicks_per_post': 5.88,
+            'clicks_by_platform': {
+                'facebook': 58,
+                'linkedin': 45,
+                'twitter': 32,
+                'instagram': 12
+            },
+            'clicks_by_badge_type': {
+                'gold': 78,
+                'silver': 45,
+                'bronze': 24
+            },
+            'top_posts': [
+                {
+                    'post_url': 'https://facebook.com/posts/award-winner-2024',
+                    'platform': 'facebook',
+                    'badge_type': 'gold',
+                    'clicks': 23,
+                    'first_click': '2025-12-26T09:15:00',
+                    'last_click': '2025-12-26T18:45:00'
+                },
+                {
+                    'post_url': 'https://linkedin.com/feed/achievement-unlocked',
+                    'platform': 'linkedin',
+                    'badge_type': 'gold',
+                    'clicks': 18,
+                    'first_click': '2025-12-26T10:30:00',
+                    'last_click': '2025-12-26T17:20:00'
+                },
+                {
+                    'post_url': 'https://twitter.com/status/milestone-reached',
+                    'platform': 'twitter',
+                    'badge_type': 'silver',
+                    'clicks': 15,
+                    'first_click': '2025-12-26T11:00:00',
+                    'last_click': '2025-12-26T16:30:00'
+                },
+                {
+                    'post_url': 'https://facebook.com/posts/new-certification',
+                    'platform': 'facebook',
+                    'badge_type': 'silver',
+                    'clicks': 12,
+                    'first_click': '2025-12-26T08:45:00',
+                    'last_click': '2025-12-26T15:10:00'
+                },
+                {
+                    'post_url': 'https://instagram.com/p/recognition-day',
+                    'platform': 'instagram',
+                    'badge_type': 'bronze',
+                    'clicks': 9,
+                    'first_click': '2025-12-26T12:00:00',
+                    'last_click': '2025-12-26T14:30:00'
+                }
+            ],
+            'recent_clicks': [
+                {
+                    'timestamp': '2025-12-26T18:45:00',
+                    'platform': 'facebook',
+                    'badge_type': 'gold',
+                    'post_url': 'https://facebook.com/posts/award-winner-2024',
+                    'username': 'user_147'
+                },
+                {
+                    'timestamp': '2025-12-26T18:30:00',
+                    'platform': 'linkedin',
+                    'badge_type': 'silver',
+                    'post_url': 'https://linkedin.com/feed/team-excellence',
+                    'username': 'user_146'
+                },
+                {
+                    'timestamp': '2025-12-26T18:15:00',
+                    'platform': 'twitter',
+                    'badge_type': 'gold',
+                    'post_url': 'https://twitter.com/status/breakthrough-2024',
+                    'username': 'user_145'
+                }
+            ]
+        }
+        
+        st.info("💡 This is sample data. Start the tracking server to see real analytics!")
+    else:
+        analytics = fetch_analytics()
     
     if analytics:
         # Top-level metrics
