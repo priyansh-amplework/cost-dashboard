@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+import requests
+from datetime import datetime
+import time
 
 # Page config
 st.set_page_config(
@@ -9,6 +12,9 @@ st.set_page_config(
     page_icon="💰",
     layout="wide"
 )
+
+# Configuration
+TRACKING_SERVER = "http://localhost:5000"  # Always use localhost for fixed server
 
 # Custom CSS
 st.markdown("""
@@ -32,12 +38,88 @@ st.markdown("""
         border-radius: 10px;
         margin: 20px 0;
     }
+    .click-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .post-url {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .post-url:hover {
+        text-decoration: underline;
+    }
+    .error-box {
+        background-color: #ffebee;
+        border-left: 4px solid #f44336;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
+@st.cache_data(ttl=30)
+def fetch_analytics():
+    """Fetch click analytics from tracking server."""
+    try:
+        response = requests.get(f"{TRACKING_SERVER}/api/analytics", timeout=3)
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        return None
+
+@st.cache_data(ttl=10)
+def check_server_status():
+    """Check if tracking server is running."""
+    try:
+        response = requests.get(f"{TRACKING_SERVER}/health", timeout=2)
+        if response.status_code == 200:
+            return True
+        return False
+    except:
+        return False
+
+@st.cache_data(ttl=60)
+def fetch_public_url():
+    """Fetch the public ngrok URL from tracking server - SIMPLIFIED."""
+    try:
+        response = requests.get(f"{TRACKING_SERVER}/api/public-url", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("public_url"), data.get("final_destination")
+        return None, None
+    except:
+        return None, None
+
 # Header
 st.title("💰 Social Media Automation Cost Dashboard")
-st.markdown("**Complete cost analysis for Badges, Memes & Blog automation**")
+st.markdown("**Complete cost analysis for Badges, Memes & Blog automation + Real-time Click Analytics**")
+
+# Check server status
+server_running = check_server_status()
+
+if server_running:
+    st.success(f"✅ Tracking Server Active: `{TRACKING_SERVER}`")
+    st.info("💡 **For external click tracking:** Run `python click_tracking_fixed.py` in a separate terminal")
+else:
+    st.warning("⚠️ Tracking server offline. Start it with:")
+    st.code("python click_tracking_fixed.py", language="bash")
+    st.markdown("""
+    <div class="error-box">
+    <strong>Quick Fix Instructions:</strong>
+    1. Open a new terminal
+    2. Run: <code>python click_tracking_fixed.py</code>
+    3. Keep that terminal running
+    4. Refresh this dashboard
+    </div>
+    """, unsafe_allow_html=True)
+
 st.markdown("---")
 
 # Sidebar controls
@@ -99,9 +181,8 @@ badge_cost_per_item = badge_costs["scraping"] + badge_costs["search"] + badge_ca
 badge_daily_cost = badge_cost_per_item * badge_count
 
 # ============= MEME COSTS =============
-# One-time scraping costs (prorated based on refresh frequency)
-instagram_scraping_cost = 0.69  # One run
-instagram_embedding_cost = 0.00648  # One run
+instagram_scraping_cost = 0.69
+instagram_embedding_cost = 0.00648
 
 refresh_days = {
     "Daily": 1,
@@ -112,35 +193,29 @@ refresh_days = {
 ig_daily_scraping = instagram_scraping_cost / refresh_days[instagram_refresh]
 ig_daily_embedding = instagram_embedding_cost / refresh_days[instagram_refresh]
 
-# Per-meme generation costs (Gemini for meme creation)
-meme_query_embedding_cost = 0.000004  # Query embedding (negligible)
-meme_text_generation_cost = 0.012  # Gemini 2.5 Pro (idea + caption)
-meme_image_generation_cost = 0.039  # Gemini Flash Image (actual image)
+meme_query_embedding_cost = 0.000004
+meme_text_generation_cost = 0.012
+meme_image_generation_cost = 0.039
 
 meme_cost_per_item = meme_query_embedding_cost + meme_text_generation_cost + meme_image_generation_cost
 meme_daily_generation = meme_cost_per_item * meme_count
 meme_daily_cost = meme_daily_generation + ig_daily_scraping + ig_daily_embedding
 
 # ============= BLOG COSTS =============
-# One-time scraping costs (prorated based on refresh frequency)
-news_scraping_cost = 1.60  # One run (Google News)
-news_embedding_cost = 0.00115  # One run (News embeddings)
+news_scraping_cost = 1.60
+news_embedding_cost = 0.00115
 
 news_daily_scraping = news_scraping_cost / refresh_days[news_refresh]
 news_daily_embedding = news_embedding_cost / refresh_days[news_refresh]
 
-# Per-blog generation costs (Multi-source: Book + YouTube + News)
-# Source embeddings (per blog)
-book_embedding_cost = 0.0012  # ~10,000 tokens from book
-youtube_embedding_cost = 0.00096  # ~8,000 tokens from YouTube transcript
-blog_source_embeddings = book_embedding_cost + youtube_embedding_cost  # Total: 0.00216
+book_embedding_cost = 0.0012
+youtube_embedding_cost = 0.00096
+blog_source_embeddings = book_embedding_cost + youtube_embedding_cost
 
-# CrewAI blog generation (Gemini 2.5 Pro)
-blog_gemini_input_cost = 0.005  # Context + instructions (~4,000 tokens)
-blog_gemini_output_cost = 0.012  # Blog content (~1,200 tokens)
-blog_generation_cost = blog_gemini_input_cost + blog_gemini_output_cost  # Total: 0.017
+blog_gemini_input_cost = 0.005
+blog_gemini_output_cost = 0.012
+blog_generation_cost = blog_gemini_input_cost + blog_gemini_output_cost
 
-# Total per blog
 blog_cost_per_item = blog_source_embeddings + blog_generation_cost
 blog_daily_generation = blog_cost_per_item * blog_count
 blog_daily_cost = blog_daily_generation + news_daily_scraping + news_daily_embedding
@@ -207,7 +282,7 @@ st.plotly_chart(fig_pie, use_container_width=True)
 st.markdown("---")
 
 # ============= DETAILED BREAKDOWNS =============
-tab1, tab2, tab3 = st.tabs(["🎯 Badge Posting", "🎨 Meme Generation", "📰 Blog Posting"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 Badge Posting", "🎨 Meme Generation", "📰 Blog Posting", "📊 Click Analytics"])
 
 # --- BADGE TAB ---
 with tab1:
@@ -413,6 +488,284 @@ with tab3:
         **Sources per blog:** Book content + YouTube transcript + News context
         """)
 
+# --- CLICK ANALYTICS TAB ---
+with tab4:
+    st.markdown("### 📊 Real-Time Click Analytics")
+    
+    # Server status check
+    if not server_running:
+        st.error("❌ Tracking server is not running!")
+        st.markdown("""
+        <div class="error-box">
+        <strong>To start the tracking server:</strong>
+        1. Open a <strong>new terminal</strong><br>
+        2. Run: <code>python click_tracking_fixed.py</code><br>
+        3. Keep that terminal running<br>
+        4. Click the button below to refresh
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Check Server Status"):
+                st.cache_data.clear()
+                st.rerun()
+        with col2:
+            if st.button("📝 View Sample Analytics"):
+                # Show sample data when server is down
+                st.info("📊 Sample Analytics (Server Offline)")
+                sample_df = pd.DataFrame({
+                    "Post URL": ["https://facebook.com/posts/123", "https://linkedin.com/feed/456"],
+                    "Platform": ["Facebook", "LinkedIn"],
+                    "Badge": ["Gold", "Silver"],
+                    "Clicks": [0, 0],
+                    "First Click": ["--", "--"],
+                    "Last Click": ["--", "--"]
+                })
+                st.dataframe(sample_df, use_container_width=True)
+        
+       
+    
+    analytics = fetch_analytics()
+    
+    if analytics:
+        # Top-level metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_clicks = analytics.get('total_clicks', 0)
+            st.metric(
+                label="🖱️ Total Clicks",
+                value=f"{total_clicks:,}",
+                delta=f"{analytics.get('unique_users', 0)} unique users"
+            )
+        
+        with col2:
+            st.metric(
+                label="📝 Posts Tracked",
+                value=f"{analytics.get('total_posts', 0):,}",
+                delta="Active posts"
+            )
+        
+        with col3:
+            avg_clicks = analytics.get('avg_clicks_per_post', 0)
+            st.metric(
+                label="📈 Avg Clicks/Post",
+                value=f"{avg_clicks:.2f}",
+                delta="engagement rate"
+            )
+        
+        with col4:
+            if st.button("🔄 Refresh Now"):
+                st.cache_data.clear()
+                st.rerun()
+            
+            # Reset button
+            if st.button("🗑️ Reset Analytics", type="secondary"):
+                try:
+                    response = requests.post(f"{TRACKING_SERVER}/api/reset")
+                    if response.status_code == 200:
+                        st.success("✅ Analytics reset!")
+                        time.sleep(1)
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to reset analytics")
+                except:
+                    st.error("❌ Could not connect to server")
+        
+        st.markdown("---")
+        
+        # Platform and Badge Performance
+        if analytics.get('clicks_by_platform') or analytics.get('clicks_by_badge_type'):
+            col_left, col_right = st.columns(2)
+            
+            with col_left:
+                st.markdown("### 📱 Clicks by Platform")
+                
+                if analytics['clicks_by_platform']:
+                    platform_df = pd.DataFrame([
+                        {"Platform": k.capitalize(), "Clicks": v}
+                        for k, v in analytics['clicks_by_platform'].items()
+                    ]).sort_values('Clicks', ascending=False)
+                    
+                    fig_platform = px.bar(
+                        platform_df,
+                        x='Platform',
+                        y='Clicks',
+                        color='Platform',
+                        color_discrete_sequence=['#667eea', '#f093fb', '#4facfe', '#43e97b'],
+                        text='Clicks'
+                    )
+                    fig_platform.update_traces(texttemplate='%{text:,}', textposition='outside')
+                    fig_platform.update_layout(
+                        showlegend=False,
+                        height=350,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        xaxis_title="",
+                        yaxis_title="Clicks"
+                    )
+                    st.plotly_chart(fig_platform, use_container_width=True)
+                else:
+                    st.info("No platform data available yet")
+            
+            with col_right:
+                st.markdown("### 🏆 Clicks by Badge Type")
+                
+                if analytics['clicks_by_badge_type']:
+                    badge_df = pd.DataFrame([
+                        {"Badge": k.capitalize(), "Clicks": v}
+                        for k, v in analytics['clicks_by_badge_type'].items()
+                    ]).sort_values('Clicks', ascending=False)
+                    
+                    colors_map = {
+                        'Gold': '#FFD700',
+                        'Silver': '#C0C0C0',
+                        'Bronze': '#CD7F32'
+                    }
+                    colors = [colors_map.get(badge, '#667eea') for badge in badge_df['Badge']]
+                    
+                    fig_badge = go.Figure(data=[go.Pie(
+                        labels=badge_df['Badge'],
+                        values=badge_df['Clicks'],
+                        hole=.4,
+                        marker_colors=colors
+                    )])
+                    
+                    fig_badge.update_layout(
+                        height=350,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        showlegend=True
+                    )
+                    st.plotly_chart(fig_badge, use_container_width=True)
+                else:
+                    st.info("No badge data available yet")
+        else:
+            st.info("📊 No click data yet. Start posting and clicking to see analytics!")
+        
+        st.markdown("---")
+        
+        # Top Performing Posts
+        st.markdown("### 🌟 Top Performing Posts")
+        
+        if analytics.get('top_posts'):
+            top_posts = analytics['top_posts']
+            
+            if top_posts:
+                # Create DataFrame
+                post_data = []
+                for post in top_posts[:20]:  # Show top 20
+                    post_data.append({
+                        "Post URL": post.get('post_url', 'N/A'),
+                        "Platform": post.get('platform', 'unknown').capitalize(),
+                        "Badge": post.get('badge_type', 'unknown').capitalize(),
+                        "Clicks": post.get('clicks', 0),
+                        "First Click": post.get('first_click', 'N/A')[:16] if post.get('first_click') else 'N/A',
+                        "Last Click": post.get('last_click', 'N/A')[:16] if post.get('last_click') else 'N/A'
+                    })
+                
+                if post_data:
+                    posts_df = pd.DataFrame(post_data)
+                    
+                    # Configure columns
+                    column_config = {
+                        "Clicks": st.column_config.NumberColumn(
+                            "Clicks",
+                            format="%d 🔥",
+                            help="Number of clicks on this post"
+                        ),
+                        "Platform": st.column_config.TextColumn(
+                            "Platform",
+                            help="Social media platform"
+                        ),
+                        "Badge": st.column_config.TextColumn(
+                            "Badge",
+                            help="Type of badge"
+                        )
+                    }
+                    
+                    # Add link column for URLs that start with http
+                    if "Post URL" in posts_df.columns:
+                        column_config["Post URL"] = st.column_config.LinkColumn(
+                            "Post URL",
+                            help="Click to view the actual social media post",
+                            max_chars=50
+                        )
+                    
+                    st.dataframe(
+                        posts_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config=column_config
+                    )
+                else:
+                    st.info("No posts with valid data")
+            else:
+                st.info("📭 No posts tracked yet. Start posting to see analytics!")
+        else:
+            st.info("📭 No posts tracked yet. Start posting to see analytics!")
+        
+        st.markdown("---")
+        
+        # Recent Activity
+        st.markdown("### 🕒 Recent Click Activity")
+        
+        if analytics.get('recent_clicks'):
+            recent_clicks = analytics['recent_clicks']
+            
+            if recent_clicks:
+                # Show last 10 clicks
+                for click in reversed(recent_clicks[-10:]):
+                    try:
+                        timestamp = datetime.fromisoformat(click['timestamp']).strftime('%H:%M:%S')
+                        date = datetime.fromisoformat(click['timestamp']).strftime('%Y-%m-%d')
+                        
+                        platform_emoji = {
+                            'facebook': '📘',
+                            'linkedin': '💼',
+                            'twitter': '🐦',
+                            'instagram': '📷'
+                        }.get(click.get('platform', '').lower(), '📱')
+                        
+                        badge_emoji = {
+                            'gold': '🥇',
+                            'silver': '🥈',
+                            'bronze': '🥉'
+                        }.get(click.get('badge_type', '').lower(), '🏆')
+                        
+                        # Get display text
+                        post_url = click.get('post_url', '')
+                        username = click.get('username', 'Unknown')
+                        
+                        if post_url and post_url != 'N/A':
+                            display_text = post_url
+                            if len(display_text) > 50:
+                                display_text = display_text[:47] + "..."
+                            display_html = f'<a href="{post_url}" target="_blank" class="post-url">{display_text}</a>'
+                        else:
+                            display_html = username
+                        
+                        st.markdown(f"""
+                        <div class="click-card">
+                            {platform_emoji} <strong>{display_html}</strong> {badge_emoji}<br>
+                            <small>🕐 {date} {timestamp} • {click.get('platform', 'unknown').capitalize()}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    except:
+                        continue
+            else:
+                st.info("No recent clicks recorded")
+        else:
+            st.info("No recent clicks recorded")
+    
+    else:
+        st.warning("⚠️ Could not fetch analytics data. The server might be busy.")
+        if st.button("🔄 Try Again"):
+            st.cache_data.clear()
+            st.rerun()
+
 st.markdown("---")
 
 # ============= MONTHLY PROJECTION =============
@@ -489,3 +842,6 @@ with st.expander("📊 View Detailed Statistics"):
 # Footer
 st.markdown("---")
 st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-time cost changes across all automation types!")
+
+# Auto-refresh note
+st.caption("🔄 Analytics auto-refresh every 30 seconds. Click 'Refresh Now' for immediate update.")
