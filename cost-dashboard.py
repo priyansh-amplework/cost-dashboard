@@ -110,16 +110,7 @@ if server_running:
 else:
     st.warning("⚠️ Tracking server offline. Start it with:")
     st.code("python click_tracking_fixed.py", language="bash")
-    st.markdown("""
-    <div class="error-box">
-    <strong>Quick Fix Instructions:</strong>
-    1. Open a new terminal
-    2. Run: <code>python click_tracking_fixed.py</code>
-    3. Keep that terminal running
-    4. Refresh this dashboard
-    </div>
-    """, unsafe_allow_html=True)
-
+    
 st.markdown("---")
 
 # Sidebar controls
@@ -917,3 +908,4 @@ st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-t
 
 # Auto-refresh note
 st.caption("🔄 Analytics auto-refresh every 30 seconds. Click 'Refresh Now' for immediate update.")
+
