@@ -488,5 +488,4 @@ with st.expander("📊 View Detailed Statistics"):
 
 # Footer
 st.markdown("---")
-
 st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-time cost changes across all automation types!")
