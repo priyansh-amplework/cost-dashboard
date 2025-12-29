@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # Configuration
-TRACKING_SERVER = "http://localhost:5000"  # Always use localhost for fixed server
+TRACKING_SERVER = "https://hustle-maestro-railway-production.up.railway.app/"  # Always use localhost for fixed server
 
 # Custom CSS
 st.markdown("""
@@ -908,4 +908,5 @@ st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-t
 
 # Auto-refresh note
 st.caption("🔄 Analytics auto-refresh every 30 seconds. Click 'Refresh Now' for immediate update.")
+
 
