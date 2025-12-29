@@ -105,7 +105,7 @@ st.markdown("**Complete cost analysis for Badges, Memes & Blog automation + Real
 server_running = check_server_status()
 
 if server_running:
-    st.success(f"✅ Tracking Server Active: `{TRACKING_SERVER}`")
+    st.success(f"✅ Tracking Server Active:")
     
 else:
     st.warning("⚠️ Tracking server offline")
@@ -492,9 +492,8 @@ with tab4:
         <div class="error-box">
         <strong>To start the tracking server:</strong>
         1. Open a <strong>new terminal</strong><br>
-        2. Run: <code>python click_tracking_fixed.py</code><br>
-        3. Keep that terminal running<br>
-        4. Click the button below to refresh
+        2. Keep that terminal running<br>
+        3. Click the button below to refresh
         </div>
         """, unsafe_allow_html=True)
         
@@ -909,3 +908,4 @@ st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-t
 
 # Auto-refresh note
 st.caption("🔄 Analytics auto-refresh every 30 seconds. Click 'Refresh Now' for immediate update.")
+
