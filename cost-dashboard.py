@@ -14,8 +14,8 @@ st.set_page_config(
 )
 
 # Configuration
-TRACKING_SERVER = "https://hustle-maestro-railway-production.up.railway.app/"  # Always use localhost for fixed server
-
+#TRACKING_SERVER = "http://localhost:5000"  # Always use localhost for fixed server
+TRACKING_SERVER = "https://hustle-maestro-railway-production.up.railway.app/"
 # Custom CSS
 st.markdown("""
     <style>
@@ -106,11 +106,12 @@ server_running = check_server_status()
 
 if server_running:
     st.success(f"✅ Tracking Server Active: `{TRACKING_SERVER}`")
-    st.info("💡 **For external click tracking:** Run `python click_tracking_fixed.py` in a separate terminal")
-else:
-    st.warning("⚠️ Tracking server offline. Start it with:")
-    st.code("python click_tracking_fixed.py", language="bash")
     
+else:
+    st.warning("⚠️ Tracking server offline")
+    
+    
+
 st.markdown("---")
 
 # Sidebar controls
@@ -908,5 +909,3 @@ st.markdown("**💡 Tip:** Adjust the configuration in the sidebar to see real-t
 
 # Auto-refresh note
 st.caption("🔄 Analytics auto-refresh every 30 seconds. Click 'Refresh Now' for immediate update.")
-
-
